@@ -151,6 +151,7 @@ pub async fn handshake_initiate<S: AsyncRead + AsyncWrite + Unpin, D: DH, C: Cip
     // Additional message can be written here. It will NOT be encrypted, but will be authenticated.
     hs.write_message(&[], &mut buf)?;
     stream.write_all(&buf).await?;
+    stream.flush().await?;
 
     let mut len_bytes = [0u8; 2];
     stream.read_exact(&mut len_bytes).await?;
@@ -166,6 +167,7 @@ pub async fn handshake_initiate<S: AsyncRead + AsyncWrite + Unpin, D: DH, C: Cip
         .map_err(|_| HandshakeError::MessageTooLarge)?;
     stream.write_all(&len.to_be_bytes()).await?;
     stream.write_all(&buf).await?;
+    stream.flush().await?;
 
     Ok(HandshakeResult::new(stream, hs, received_message))
 }
@@ -221,6 +223,7 @@ pub async fn handshake_respond<S: AsyncRead + AsyncWrite + Unpin, D: DH, C: Ciph
         .map_err(|_| HandshakeError::MessageTooLarge)?;
     stream.write_all(&len.to_be_bytes()).await?;
     stream.write_all(&buf).await?;
+    stream.flush().await?;
 
     let mut len_bytes = [0u8; 2];
     stream.read_exact(&mut len_bytes).await?;
