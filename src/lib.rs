@@ -7,7 +7,7 @@ use std::{
     task::{Context, Poll},
 };
 
-use futures_core::Stream;
+use futures_core::{ready, Stream};
 use noise_protocol::{
     patterns::noise_xx, Cipher, CipherState, HandshakeState, HandshakeStateBuilder, Hash, DH,
 };
@@ -15,15 +15,6 @@ use pin_project_lite::pin_project;
 use thiserror::Error;
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio_util::codec::{FramedRead, LengthDelimitedCodec};
-
-macro_rules! ready {
-    ($e:expr $(,)?) => {
-        match $e {
-            Poll::Pending => return Poll::Pending,
-            Poll::Ready(t) => t,
-        }
-    };
-}
 
 /// Handshake error.
 #[non_exhaustive]
@@ -503,8 +494,8 @@ mod tests {
             Vec::new(),
             CipherState::<ChaCha20Poly1305>::new(&[7; 32], 0),
         );
-        w.write(&[1u8; 32]).await.unwrap();
-        w.write(&[2u8; 32]).await.unwrap();
+        assert_eq!(w.write(&[1u8; 32]).await.unwrap(), 32);
+        assert_eq!(w.write(&[2u8; 32]).await.unwrap(), 32);
         w.write_all(&[3u8; 65535]).await.unwrap();
         w.flush().await.unwrap();
 
